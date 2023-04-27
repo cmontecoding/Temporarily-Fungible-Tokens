@@ -17,4 +17,6 @@ contract RenterNFT is ERC721, ERC721Burnable, Ownable {
         _safeMint(to, tokenId);
     }
 
+    
+
 }

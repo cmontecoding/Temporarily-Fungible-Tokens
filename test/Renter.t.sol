@@ -10,31 +10,40 @@ contract RenterTest is Test {
     Renter public renter;
     address lister;
     address lister2;
+    RenterNFT nft;
 
     function setUp() public {
 
-        renter = new Renter();
         lister = payable(address(uint160(uint256(keccak256(abi.encodePacked("lister"))))));
         lister2 = payable(address(uint160(uint256(keccak256(abi.encodePacked("lister2"))))));
+
+        nft = new RenterNFT();
+        renter = new Renter(nft);
 
     }
 
     function testListOne() public {
 
-        vm.prank(lister);
-        renter.listOne(1, 2, 1, 5);
+        nft.safeMint(lister, 10);
+        vm.startPrank(lister);
+        nft.approve(address(renter), 10);
+        renter.listOne(10, 2, 1, 5);
 
-        vm.prank(lister2);
-        renter.listOne(10, 20, 10, 50);
+        assertTrue(nft.ownerOf(10) == address(renter));
 
     }
 
     function testRemoveListing() public {
 
+        //set up
+        nft.safeMint(lister, 10);
         vm.startPrank(lister);
-        renter.listOne(1, 2, 1, 5);
-        renter.removeListing(1);
-        vm.stopPrank();
+        nft.approve(address(renter), 10);
+        renter.listOne(10, 2, 1, 5);
+        assertTrue(nft.ownerOf(10) == address(renter));
+
+        renter.removeListing(10);
+        assertTrue(nft.ownerOf(10) == address(lister));
 
     }
 
@@ -42,13 +51,18 @@ contract RenterTest is Test {
         Tests when someone tries to remove someone
         else's listing.
      */
-    function testFailRemoveListing() public {
+    function testFailRemoveOthersListing() public {
 
-        vm.prank(lister);
-        renter.listOne(1, 2, 1, 5);
+        //set up
+        nft.safeMint(lister, 10);
+        vm.startPrank(lister);
+        nft.approve(address(renter), 10);
+        renter.listOne(10, 2, 1, 5);
+        vm.stopPrank();
+        assertTrue(nft.ownerOf(10) == address(renter));
 
         vm.prank(lister2);
-        renter.removeListing(1);
+        renter.removeListing(10);
 
     }
 
@@ -71,13 +85,18 @@ contract RenterTest is Test {
       */
     function testDoubleRemoveListing() public {
 
-        //removes same listing twice so should revert
+        //set up
+        nft.safeMint(lister, 10);
         vm.startPrank(lister);
-        renter.listOne(1, 2, 1, 5);
-        renter.removeListing(1);
+        nft.approve(address(renter), 10);
+        renter.listOne(10, 2, 1, 5);
+        assertTrue(nft.ownerOf(10) == address(renter));
+
+        renter.removeListing(10);
+        assertTrue(nft.ownerOf(10) == address(lister));
+
         vm.expectRevert();
-        renter.removeListing(1);
-        vm.stopPrank();
+        renter.removeListing(10);
 
     }
 
