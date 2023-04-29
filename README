@@ -1,3 +1,14 @@
 NFT Renter
 
-NFT Renter is a smart contract that allows decentralized lending and renting of NFT's. I used solidity and foundry for testing.
+NFT Renter is a smart contract that allows decentralized lending and renting of NFT's. I used solidity and foundry for testing. Created from scratch with the use of Openzeppelin/Foundry docs and stack overflow.
+
+
+How It Works:
+
+Lenders send NFT's to the smart contract in escrow. They can remove their listing if no one rents.
+
+Renters can rent out a listed NFT after putting up a preset collateral amount and paying the rent for the NFT. If they fail to return the NFT in the preset time they risk losing their collateral. NFT returns are sent directly back to the original owner.
+
+1.5% of the rent for the NFT is sent to a governance address as a fee.
+
+Works with all ERC721 NFT's
