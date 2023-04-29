@@ -95,7 +95,6 @@ contract Renter is IERC721Receiver {
         _rentingProcess(_nft, _tokenId);
         
         //take a 1.5% fee on the rentPrice and then send the rest to the originial owner
-        //send fee to preset address in constructor
         governance.transfer((msg.value * 150) / 10000);
         payable(listings[_nft][_tokenId].owner).transfer((msg.value * 9850) / 10000);
 
@@ -108,7 +107,6 @@ contract Renter is IERC721Receiver {
      */
     function _rentingProcess(IERC721 _nft, uint256 tokenId) private {
 
-        //transfer nft to renter
         _nft.safeTransferFrom(address(this), msg.sender, tokenId);
 
         renting memory _renting = renting(
