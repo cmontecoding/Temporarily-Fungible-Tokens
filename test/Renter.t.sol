@@ -20,7 +20,7 @@ contract RenterTest is Test {
         governance = payable(address(uint160(uint256(keccak256(abi.encodePacked("governance"))))));
 
         nft = new RenterNFT();
-        renter = new Renter(nft, governance);
+        renter = new Renter(governance);
 
     }
 
@@ -29,7 +29,7 @@ contract RenterTest is Test {
         nft.safeMint(user, 10);
         vm.startPrank(user);
         nft.approve(address(renter), 10);
-        renter.listOne(10, 2, 1 ether, 5);
+        renter.listOne(nft, 10, 2, 1 ether, 5);
 
         assertTrue(nft.ownerOf(10) == address(renter));
 
@@ -41,10 +41,10 @@ contract RenterTest is Test {
         nft.safeMint(user, 10);
         vm.startPrank(user);
         nft.approve(address(renter), 10);
-        renter.listOne(10, 2, 1 ether, 5);
+        renter.listOne(nft, 10, 2, 1 ether, 5);
         assertTrue(nft.ownerOf(10) == address(renter));
 
-        renter.removeListing(10);
+        renter.removeListing(nft, 10);
         assertTrue(nft.ownerOf(10) == address(user));
 
     }
@@ -59,12 +59,12 @@ contract RenterTest is Test {
         nft.safeMint(user, 10);
         vm.startPrank(user);
         nft.approve(address(renter), 10);
-        renter.listOne(10, 2, 1, 5);
+        renter.listOne(nft, 10, 2, 1, 5);
         vm.stopPrank();
         assertTrue(nft.ownerOf(10) == address(renter));
 
         vm.prank(user2);
-        renter.removeListing(10);
+        renter.removeListing(nft, 10);
 
     }
 
@@ -79,7 +79,7 @@ contract RenterTest is Test {
         //removes non-existent listing
         vm.prank(user);
         vm.expectRevert();
-        renter.removeListing(7);
+        renter.removeListing(nft, 7);
 
      }
 
@@ -95,14 +95,14 @@ contract RenterTest is Test {
         nft.safeMint(user, 10);
         vm.startPrank(user);
         nft.approve(address(renter), 10);
-        renter.listOne(10, 2, 1 ether, 5);
+        renter.listOne(nft, 10, 2, 1 ether, 5);
         assertTrue(nft.ownerOf(10) == address(renter));
 
-        renter.removeListing(10);
+        renter.removeListing(nft, 10);
         assertTrue(nft.ownerOf(10) == address(user));
 
         vm.expectRevert();
-        renter.removeListing(10);
+        renter.removeListing(nft, 10);
 
     }
 
@@ -128,13 +128,13 @@ contract RenterTest is Test {
         nft.safeMint(user, 10);
         vm.startPrank(user);
         nft.approve(address(renter), 10);
-        renter.listOne(10, 20000, 10000, 5);
+        renter.listOne(nft, 10, 20000, 10000, 5);
         vm.stopPrank();
 
         vm.deal(user2, 30000);
         vm.startPrank(user2);
         renter.depositCollateral{value: 20000}();
-        renter.rentOne{value: 10000}(10);
+        renter.rentOne{value: 10000}(nft, 10);
         vm.stopPrank();
         
         assertTrue(nft.ownerOf(10) == user2);
@@ -153,7 +153,7 @@ contract RenterTest is Test {
         vm.deal(user2, 30000);
         vm.startPrank(user2);
         renter.depositCollateral{value: 20000}();
-        renter.rentOne{value: 10000}(10);
+        renter.rentOne{value: 10000}(nft, 10);
         vm.stopPrank();
 
     }
@@ -167,13 +167,13 @@ contract RenterTest is Test {
         nft.safeMint(user, 10);
         vm.startPrank(user);
         nft.approve(address(renter), 10);
-        renter.listOne(10, 20000, 10000, 5);
+        renter.listOne(nft, 10, 20000, 10000, 5);
         vm.stopPrank();
         
         vm.deal(user2, 30000);
         vm.startPrank(user2);
         renter.depositCollateral{value: 20000}();
-        renter.rentOne{value: 9999}(10);
+        renter.rentOne{value: 9999}(nft, 10);
         vm.stopPrank();
 
     }
@@ -187,13 +187,13 @@ contract RenterTest is Test {
         nft.safeMint(user, 10);
         vm.startPrank(user);
         nft.approve(address(renter), 10);
-        renter.listOne(10, 20000, 10000, 5);
+        renter.listOne(nft, 10, 20000, 10000, 5);
         vm.stopPrank();
         
         vm.deal(user2, 30000);
         vm.startPrank(user2);
         renter.depositCollateral{value: 10000}();
-        renter.rentOne{value: 10000}(10);
+        renter.rentOne{value: 10000}(nft, 10);
         vm.stopPrank();
 
     }
@@ -207,17 +207,17 @@ contract RenterTest is Test {
         nft.safeMint(user, 10);
         vm.startPrank(user);
         nft.approve(address(renter), 10);
-        renter.listOne(10, 20000, 10000, 5);
+        renter.listOne(nft, 10, 20000, 10000, 5);
         vm.stopPrank();
         vm.deal(user2, 30000);
         vm.startPrank(user2);
         renter.depositCollateral{value: 20000}();
-        renter.rentOne{value: 10000}(10);
+        renter.rentOne{value: 10000}(nft, 10);
         vm.stopPrank();
 
         vm.warp(block.timestamp + (86400 * 5) + 86401);
         vm.prank(user);
-        renter.repoCollateral(10);
+        renter.repoCollateral(nft, 10);
 
         assertTrue(nft.ownerOf(10) == user2);
         assertEq(user.balance, 20000 + 9850);
@@ -233,17 +233,17 @@ contract RenterTest is Test {
         nft.safeMint(user, 10);
         vm.startPrank(user);
         nft.approve(address(renter), 10);
-        renter.listOne(10, 20000, 10000, 5);
+        renter.listOne(nft, 10, 20000, 10000, 5);
         vm.stopPrank();
         vm.deal(user2, 30000);
         vm.startPrank(user2);
         renter.depositCollateral{value: 20000}();
-        renter.rentOne{value: 10000}(10);
+        renter.rentOne{value: 10000}(nft, 10);
         vm.stopPrank();
         vm.warp(block.timestamp + (86400 * 5) + 86401);
 
         vm.prank(user2);
-        renter.repoCollateral(10);
+        renter.repoCollateral(nft, 10);
 
     }
 
@@ -256,17 +256,17 @@ contract RenterTest is Test {
         nft.safeMint(user, 10);
         vm.startPrank(user);
         nft.approve(address(renter), 10);
-        renter.listOne(10, 20000, 10000, 5);
+        renter.listOne(nft, 10, 20000, 10000, 5);
         vm.stopPrank();
         vm.deal(user2, 30000);
         vm.startPrank(user2);
         renter.depositCollateral{value: 20000}();
-        renter.rentOne{value: 10000}(10);
+        renter.rentOne{value: 10000}(nft, 10);
         vm.stopPrank();
 
         vm.warp(block.timestamp + (86400 * 5) + 86399);
         vm.prank(user);
-        renter.repoCollateral(10);
+        renter.repoCollateral(nft, 10);
 
     }
 
@@ -279,23 +279,23 @@ contract RenterTest is Test {
         nft.safeMint(user, 10);
         vm.startPrank(user);
         nft.approve(address(renter), 10);
-        renter.listOne(10, 20000, 10000, 5);
+        renter.listOne(nft, 10, 20000, 10000, 5);
         vm.stopPrank();
         vm.deal(user2, 30000);
         vm.startPrank(user2);
         renter.depositCollateral{value: 20000}();
-        renter.rentOne{value: 10000}(10);
+        renter.rentOne{value: 10000}(nft, 10);
         vm.stopPrank();
 
         //return NFT
         vm.startPrank(user2);
         nft.approve(address(renter), 10);
-        renter.returnNFT(10);
+        renter.returnNFT(nft, 10);
         vm.stopPrank();
 
         vm.warp(block.timestamp + (86400 * 5) + 86401);
         vm.prank(user);
-        renter.repoCollateral(10);
+        renter.repoCollateral(nft, 10);
     }
     
     /**
@@ -307,17 +307,17 @@ contract RenterTest is Test {
         nft.safeMint(user, 10);
         vm.startPrank(user);
         nft.approve(address(renter), 10);
-        renter.listOne(10, 20000, 10000, 5);
+        renter.listOne(nft, 10, 20000, 10000, 5);
         vm.stopPrank();
         vm.deal(user2, 30000);
         vm.startPrank(user2);
         renter.depositCollateral{value: 20000}();
-        renter.rentOne{value: 10000}(10);
+        renter.rentOne{value: 10000}(nft, 10);
         vm.stopPrank();
 
         vm.startPrank(user2);
         nft.approve(address(renter), 10);
-        renter.returnNFT(10);
+        renter.returnNFT(nft, 10);
         vm.stopPrank();
 
         assertTrue(nft.ownerOf(10) == user);
@@ -335,22 +335,22 @@ contract RenterTest is Test {
         nft.safeMint(user, 10);
         vm.startPrank(user);
         nft.approve(address(renter), 10);
-        renter.listOne(10, 20000, 10000, 5);
+        renter.listOne(nft, 10, 20000, 10000, 5);
         vm.stopPrank();
         vm.deal(user2, 30000);
         vm.startPrank(user2);
         renter.depositCollateral{value: 20000}();
-        renter.rentOne{value: 10000}(10);
+        renter.rentOne{value: 10000}(nft, 10);
         vm.stopPrank();
 
         //repo NFT
         vm.warp(block.timestamp + (86400 * 5) + 86401);
         vm.prank(user);
-        renter.repoCollateral(10);
+        renter.repoCollateral(nft, 10);
 
         vm.startPrank(user2);
         nft.approve(address(renter), 10);
-        renter.returnNFT(10);
+        renter.returnNFT(nft, 10);
         vm.stopPrank();
 
     }

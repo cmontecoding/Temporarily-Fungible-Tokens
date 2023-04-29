@@ -4,18 +4,15 @@ pragma solidity ^0.8.19;
 import "forge-std/console.sol";
 import "openzeppelin-contracts/token/ERC721/ERC721.sol";
 
-contract Renter is ERC721, IERC721Receiver {
+contract Renter is IERC721Receiver {
 
-    ERC721[] nftsOffered;
-    address[] Listers;
-    IERC721 public testNFT;
     address payable governance;
 
-    // Mapping from tokenId to listing
-    mapping(uint256 => listing) private listings;
+    // Mapping from NFT project to tokenId to listing
+    mapping(IERC721 => mapping(uint256 => listing)) private listings;
 
-    // Mapping from tokenId to renting
-    mapping(uint256 => renting) private rentings;
+    // Mapping from NFT project to tokenId to renting
+    mapping(IERC721 => mapping(uint256 => renting)) private rentings;
 
     // Mapping from renter address to collateral
     mapping(address => uint256) private renterCollateral;
@@ -38,9 +35,8 @@ contract Renter is ERC721, IERC721Receiver {
         uint256 blockWhenRented;
     }
 
-    constructor(IERC721 _address, address payable _governance) ERC721("Test", "test") {
+    constructor(address payable _governance) {
         
-        testNFT = _address;
         governance = _governance;
 
     }
@@ -49,6 +45,7 @@ contract Renter is ERC721, IERC721Receiver {
         Lists the NFT and holds it in Escrow
      */
     function listOne(
+        IERC721 _nft,
         uint256 _tokenId,
         uint256 _collateral,
         uint256 _rentPrice, 
@@ -59,7 +56,7 @@ contract Renter is ERC721, IERC721Receiver {
         require(_maxTime > 0, "Max Time Wasn't Set");
         require(_rentPrice >= 10000, "rent price has to be at least 10000 wei");
 
-        testNFT.safeTransferFrom(msg.sender, address(this), _tokenId);
+        _nft.safeTransferFrom(msg.sender, address(this), _tokenId);
 
         // map the NFT data to the listing
         listing memory _listing = listing(
@@ -68,59 +65,59 @@ contract Renter is ERC721, IERC721Receiver {
             _rentPrice,
             _maxTime,
             true);
-        listings[_tokenId] = _listing;
+        listings[_nft][_tokenId] = _listing;
 
     }
 
     /**
         for people to remove their listings if no one rents
      */
-    function removeListing(uint256 _tokenId) public {
+    function removeListing(IERC721 _nft, uint256 _tokenId) public {
 
-        require(listings[_tokenId].listed == true, "Listing Doesnt Exist");
-        require(listings[_tokenId].owner == msg.sender, "Not the NFT Owner");
+        require(listings[_nft][_tokenId].listed == true, "Listing Doesnt Exist");
+        require(listings[_nft][_tokenId].owner == msg.sender, "Not the NFT Owner");
 
-        testNFT.safeTransferFrom(address(this), msg.sender, _tokenId);
+        _nft.safeTransferFrom(address(this), msg.sender, _tokenId);
 
-        delete listings[_tokenId];
+        delete listings[_nft][_tokenId];
 
     }
 
     /**
         for renting a listing
      */
-    function rentOne(uint256 _tokenId) public payable {
+    function rentOne(IERC721 _nft, uint256 _tokenId) public payable {
 
-        require(listings[_tokenId].listed == true, "Listing Doesnt Exist");
-        require(msg.value >= listings[_tokenId].rentPrice, "Not enough rent money sent");
-        require(renterCollateral[msg.sender] >= listings[_tokenId].collateral, "not enough collateral deposited");
+        require(listings[_nft][_tokenId].listed == true, "Listing Doesnt Exist");
+        require(msg.value >= listings[_nft][_tokenId].rentPrice, "Not enough rent money sent");
+        require(renterCollateral[msg.sender] >= listings[_nft][_tokenId].collateral, "not enough collateral deposited");
         
-        _rentingProcess(_tokenId);
+        _rentingProcess(_nft, _tokenId);
         
         //take a 1.5% fee on the rentPrice and then send the rest to the originial owner
         //send fee to preset address in constructor
         governance.transfer((msg.value * 150) / 10000);
-        payable(listings[_tokenId].owner).transfer((msg.value * 9850) / 10000);
+        payable(listings[_nft][_tokenId].owner).transfer((msg.value * 9850) / 10000);
 
-        delete listings[_tokenId];
+        delete listings[_nft][_tokenId];
 
     }
 
     /**
         internal function to handle renting
      */
-    function _rentingProcess(uint256 tokenId) private {
+    function _rentingProcess(IERC721 _nft, uint256 tokenId) private {
 
         //transfer nft to renter
-        testNFT.safeTransferFrom(address(this), msg.sender, tokenId);
+        _nft.safeTransferFrom(address(this), msg.sender, tokenId);
 
         renting memory _renting = renting(
-            listings[tokenId].owner,
+            listings[_nft][tokenId].owner,
             msg.sender,
-            listings[tokenId].collateral,
-            listings[tokenId].maxTime,
+            listings[_nft][tokenId].collateral,
+            listings[_nft][tokenId].maxTime,
             block.timestamp);
-        rentings[tokenId] = _renting;
+        rentings[_nft][tokenId] = _renting;
 
     }
 
@@ -139,18 +136,18 @@ contract Renter is ERC721, IERC721Receiver {
 
         @notice 1 day grace period
      */
-    function repoCollateral(uint256 tokenId) public {
+    function repoCollateral(IERC721 _nft, uint256 tokenId) public {
 
-        require(rentings[tokenId].originalOwner == msg.sender, "Not the original Owner");
+        require(rentings[_nft][tokenId].originalOwner == msg.sender, "Not the original Owner");
        
         // Repo is open after the block time at rent + max time + 1 day grace period
-        uint256 repoBlock = rentings[tokenId].blockWhenRented + (rentings[tokenId].maxTime * 86400) + 86400;
+        uint256 repoBlock = rentings[_nft][tokenId].blockWhenRented + (rentings[_nft][tokenId].maxTime * 86400) + 86400;
         require(block.timestamp > repoBlock, "Not enough time for repo yet");
 
-        payable(rentings[tokenId].originalOwner).transfer(rentings[tokenId].collateral);
+        payable(rentings[_nft][tokenId].originalOwner).transfer(rentings[_nft][tokenId].collateral);
         
         // Remove renting to close the list-rent cycle
-        delete rentings[tokenId];
+        delete rentings[_nft][tokenId];
 
     }
 
@@ -161,28 +158,24 @@ contract Renter is ERC721, IERC721Receiver {
         @notice the renter cannot return the nft if it was overdue and
         the collateral was repo'd
      */
-    function returnNFT(uint256 _tokenId) public {
+    function returnNFT(IERC721 _nft, uint256 _tokenId) public {
 
         // Require the renting wasnt repo'd
         // might not be optimal/safest way to check if renting was removed
-        require(rentings[_tokenId].renter == msg.sender, "Collateral was repo'd, renting closed");
+        require(rentings[_nft][_tokenId].renter == msg.sender, "Collateral was repo'd, renting closed");
 
         //transfer from renter to orginial owner
-        testNFT.safeTransferFrom(msg.sender, rentings[_tokenId].originalOwner, _tokenId);
+        _nft.safeTransferFrom(msg.sender, rentings[_nft][_tokenId].originalOwner, _tokenId);
 
         //return collateral
-        uint256 collateral = rentings[_tokenId].collateral;
+        uint256 collateral = rentings[_nft][_tokenId].collateral;
         payable(msg.sender).transfer(collateral);
         renterCollateral[msg.sender] -= collateral;
 
         // Remove renting to close the list-rent cycle
-        delete rentings[_tokenId];
+        delete rentings[_nft][_tokenId];
 
     }
-
-    //public function to add nfts offered
-
-    //probably need a getter function too to get the nfts token id
 
     /**
         for calling safeTransferFrom
