@@ -5,6 +5,7 @@ import "openzeppelin-contracts/token/ERC721/ERC721.sol";
 import "openzeppelin-contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "openzeppelin-contracts/access/Ownable.sol";
 
+// this contract is for testing
 contract RenterNFT is ERC721, ERC721Burnable, Ownable {
 
     constructor() ERC721("RenterNFT", "MTK") {
