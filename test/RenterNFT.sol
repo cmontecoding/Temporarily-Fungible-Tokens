@@ -7,17 +7,11 @@ import "openzeppelin-contracts/access/Ownable.sol";
 
 // this contract is for testing
 contract RenterNFT is ERC721, ERC721Burnable, Ownable {
-
     constructor() ERC721("RenterNFT", "MTK") {
-
         transferOwnership(msg.sender);
-
     }
 
     function safeMint(address to, uint256 tokenId) public onlyOwner {
         _safeMint(to, tokenId);
     }
-
-    
-
 }
