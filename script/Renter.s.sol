@@ -11,7 +11,6 @@ contract MyScript is Script {
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        console.log(deployerPrivateKey);
         vm.startBroadcast(deployerPrivateKey);
 
         Renter renter = new Renter(payable(governance));
