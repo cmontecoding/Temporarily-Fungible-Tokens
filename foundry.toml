@@ -4,3 +4,11 @@ out = "out"
 libs = ["lib"]
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
+
+[rpc_endpoints]
+optimism = "https://opt-mainnet.g.alchemy.com/v2/VmB2ed034SyGMSq7DIHY83EP0FxdS1RZ"
+#goerli = "${GOERLI_RPC_URL}"
+
+[etherscan]
+optimism = { key = "${OPTIMISTIC_ETHERSCAN_API_KEY}" }
+#goerli = { key = "${ETHERSCAN_API_KEY}" }
