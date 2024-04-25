@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.23;
 
 import "forge-std/console.sol";
 import "openzeppelin-contracts/token/ERC721/ERC721.sol";
-
 import {EIP712} from "openzeppelin-contracts/utils/cryptography/EIP712.sol";
 
 contract RenterV2 is IERC721Receiver, EIP712 {
@@ -43,7 +42,7 @@ contract RenterV2 is IERC721Receiver, EIP712 {
         CANCELLED
     }
 
-    constructor(address payable _governance) {
+    constructor(address payable _governance) EIP712("RenterV2", "1") {
         governance = _governance;
     }
 
@@ -114,8 +113,14 @@ contract RenterV2 is IERC721Receiver, EIP712 {
         // );
 
         // _rentOne(_nft, _tokenId);
-        //bytes32 hash = deriveHash(token, seller, tokenId, price, deadline, nonce);
-        bytes32 hash = keccak256(abi.encode(token, seller, tokenId, price, deadline, nonce));
+        bytes32 hash = deriveHash(
+            token,
+            seller,
+            tokenId,
+            price,
+            deadline,
+            nonce
+        );
         require(status[hash] == Status.UNSET, "FILLED_OR_CANCELLED");
 
         address recovered = ecrecover(hash, v, r, s); //todo s is malleable so fix that somehow
@@ -133,6 +138,33 @@ contract RenterV2 is IERC721Receiver, EIP712 {
         uint256 fee = (price * 150) / 10000; //todo double check if this could overflow, also make this a changeable variable eventually
         governance.transfer(fee);
         payable(seller).transfer(price - fee);
+    }
+
+    function deriveHash(
+        address token,
+        address seller,
+        uint256 tokenId,
+        uint256 price,
+        uint256 deadline,
+        uint256 nonce
+    ) public view returns (bytes32) {
+        bytes32 structHash = keccak256(
+            abi.encode(
+                keccak256(
+                    "RentListing(address,address,uint256,uint256,uint256,uint256)"
+                ),
+                token,
+                seller,
+                tokenId,
+                price,
+                deadline,
+                nonce
+            )
+        );
+
+        bytes32 hash = _hashTypedDataV4(structHash);
+
+        return hash;
     }
 
     // /// @dev internal function for the renting process
