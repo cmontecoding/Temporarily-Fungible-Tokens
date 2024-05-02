@@ -151,7 +151,7 @@ contract RenterV2 is IERC721Receiver, EIP712 {
         bytes32 structHash = keccak256(
             abi.encode(
                 keccak256(
-                    "RentListing(address,address,uint256,uint256,uint256,uint256)"
+                    "RentListing(address token,address seller,uint256 tokenId,uint256 price,uint256 deadline,uint256 nonce)"
                 ),
                 token,
                 seller,
